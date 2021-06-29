@@ -2,19 +2,32 @@ version: "3"
 
 services:
   mosquitto:
-    container_name: mosquitto_container_iot
     image: eclipse-mosquitto
+    restart: always
     ports:
       - 1883:1883
       - 8883:8883
+    networks:
+      - node-red-net
     volumes:
-      - mosquitto-data:/mosquitto/data
-      - mosquitto-logs:/mosquitto/logs
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-    restart: unless-stopped
+      - ./mqtt/data:/mosquitto/data
+      - ./mqtt/logs:/mosquitto/logs
+      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  node-red:
+    image: nodered/node-red:latest
+    environment:
+      - TZ=Asia/Bangkok
+    ports:
+      - "1880:1880"
+    networks:
+      - node-red-net
+    volumes:
+      - node-red-data:/data
+    links:
+      - mosquitto
 
 volumes:
-  store:
-  config:
-  mosquitto-data:
-  mosquitto-logs:
+  node-red-data:
+
+networks:
+  node-red-net:

@@ -7,9 +7,27 @@ services:
     ports:
       - 1883:1883
       - 8883:8883
+    networks:
+      - node-red-net
     volumes:
       - ./mqtt/data:/mosquitto/data
       - ./mqtt/logs:/mosquitto/logs
       - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  node-red:
+    image: nodered/node-red:latest
+    environment:
+      - TZ=Asia/Bangkok
+    ports:
+      - "1880:1880"
+    networks:
+      - node-red-net
+    volumes:
+      - node-red-data:/data
+    links:
+      - mosquitto
 
+volumes:
+  node-red-data:
 
+networks:
+  node-red-net:

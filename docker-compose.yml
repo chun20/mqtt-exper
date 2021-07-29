@@ -21,8 +21,8 @@ services:
       - 1883:1883 
       - 15675:15675
     environment:
-      - RABBITMQ_DEFAULT_USER= admin
-      - RABBITMQ_DEFAULT_PASS= admin
+      - RABBITMQ_USERNAME= admin
+      - RABBITMQ_PASSWORD= admin
     volumes:
       - ./rabbitmq/lib:/var/lib/rabbitmq
       - ./rabbitmq/log:/var/log

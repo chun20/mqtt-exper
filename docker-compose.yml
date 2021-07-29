@@ -1,16 +1,31 @@
 version: "3"
 
 services:
-  mosquitto:
-    image: eclipse-mosquitto
+  # mosquitto:
+  #   image: eclipse-mosquitto
+  #   restart: always
+  #   ports:
+  #     - 1883:1883
+  #     - 8883:8883
+  #   volumes:
+  #     - ./mqtt/data:/mosquitto/data
+  #     - ./mqtt/logs:/mosquitto/logs
+  #     - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
     restart: always
     ports:
-      - 1883:1883
-      - 8883:8883
+      - 5672:5672
+      - 15672:15672
+      - 1883:1883 
+      - 15675:15675
+    environment:
+      - RABBITMQ_DEFAULT_USER= admin
+      - RABBITMQ_DEFAULT_PASS= admin
     volumes:
-      - ./mqtt/data:/mosquitto/data
-      - ./mqtt/logs:/mosquitto/logs
-      - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./rabbitmq/lib:/var/lib/rabbitmq
+      - ./rabbitmq/log:/var/log
   node-red:
     image: nodered/node-red:latest
     environment:
@@ -20,25 +35,44 @@ services:
     volumes:
       - node-red-data:/data
     links:
-      - mosquitto
-  mongo:
-    image: mongo
+      - rabbitmq
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - '8086:8086'
     volumes:
-      - ./mongo/db:/data/db
-    restart: always
-    ports:
-      - 27017:27017
+      - influxdb-storage:/var/lib/influxdb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-  mongo-express:
-    image: mongo-express
-    restart: always
+      - INFLUXDB_DB=db0
+      - INFLUXDB_ADMIN_USER=${INFLUXDB_USERNAME}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
+  chronograf:
+    image: chronograf:latest
     ports:
-      - 8081:8081
+      - '127.0.0.1:8888:8888'
+    volumes:
+      - chronograf-storage:/var/lib/chronograf
+    depends_on:
+      - influxdb
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_USERNAME=${INFLUXDB_USERNAME}
+      - INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana-provisioning/:/etc/grafana/provisioning
+    depends_on:
+      - influxdb
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USERNAME}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
 
 volumes:
   node-red-data:
+  influxdb-storage:
+  chronograf-storage:
+  grafana-storage:
